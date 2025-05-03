@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Miraculos da Mariposa</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+    * { box-sizing:border-box; margin:0; padding:0 }
+    body {
+      background: #2E003E;
+      color: #E0C3FF;
+      font-family: 'Lobster', cursive;
+      display:flex; align-items:center; justify-content:center;
+      height:100vh; position:relative;
+    }
+    .phone {
+      width:320px; height:600px;
+      background:#4B1E78; border-radius:30px;
+      box-shadow:0 10px 25px rgba(75,30,120,0.6);
+      padding:20px; display:flex;
+      flex-direction:column; justify-content:space-between;
+    }
+    h3 mark {
+      background:#6E3AA5; color:#fff;
+      padding:5px 10px; border-radius:8px;
+    }
+    h3 { text-align:center; font-size:24px }
+    .buttons {
+      display:flex; flex-direction:column;
+      align-items:center; gap:8px;
+    }
+    button {
+      width:80%; padding:10px;
+      background:#9B59B6; border:none;
+      border-radius:20px; font-size:18px;
+      color:#fff; cursor:pointer; transition:.3s;
+      font-family:'Lobster',cursive;
+    }
+    button:hover { background:#BE90D4; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <h3><mark>Psique</mark></h3>
+    <div class="buttons">
+      <button onclick="enviarMensagem()">💬 Enviar mensagem</button>
+      <button onclick="lerConversa()">📖 Ler conversa</button>
+      <button onclick="oferecerPoder()">✨ Akumatizar</button>
+      <button onclick="removerPoder()">🗑️ Remover akuma</button>
+      <button onclick="verPoderes()">💼 Meus Efeitos</button>
+    </div>
+  </div>
+
+  <script>
+    alert('NOORO ASAS NEGRAS CRESÇAM');
+
+    const PARTICIPANTES = ['Litlegot','Abrax','Hell Cat','Beast','Yellowfer','Lindemberg'];
+    const ME = 'Psique';
+    const channel = new BroadcastChannel('global_channel');
+
+    const _load = k => JSON.parse(localStorage.getItem(k)||'[]');
+    const _save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+    // Ao receber um "offer", permite aceitar ou negar
+    channel.onmessage = ev => {
+      const { type, data } = ev.data;
+      if (type === 'msg' && data.to === ME) {
+        alert(`📨 De ${data.from}: ${data.text}`);
+      }
+      if (type === 'power_offer' && data.to === ME) {
+        const ok = confirm(`${data.from} quer conceder "${data.power}". Aceitar?`);
+        if (ok) {
+          const powers = _load('powers');
+          powers.push(data);
+          _save('powers', powers);
+          channel.postMessage({ type:'power', data });
+          alert('✨ Poder aceito!');
+        } else {
+          alert('🚫 Poder negado.');
+        }
+      }
+      if (type === 'reset' && data.to === ME) {
+        // reset pela Cobra
+        localStorage.removeItem('powers');
+        alert('🔄 Seus poderes foram resetados!');
+      }
+      if (type === 'resetAll' && data.to === null) {
+        // reset pelo Gato Preto
+        localStorage.removeItem('powers');
+        alert('🔥 Todos os poderes destruídos!');
+      }
+    };
+
+    function enviarMensagem() {
+      let dest = prompt(`Enviar para?\n${PARTICIPANTES.join(', ')}`);
+      if (!PARTICIPANTES.includes(dest)) return alert('Destino inválido.');
+      let txt = prompt(`Mensagem de ${ME} para ${dest}:`);
+      if (!txt) return;
+      channel.postMessage({ type:'msg', data:{ from:ME, to:dest, text:txt.trim() } });
+      alert('Mensagem enviada!');
+    }
+
+    function lerConversa() {
+      alert('Use o chat do destinatário para ler.');
+    }
+
+    function oferecerPoder() {
+      let dest = prompt(`Conceder poder a?\n${PARTICIPANTES.join(', ')}`);
+      if (!PARTICIPANTES.includes(dest)) return alert('Destino inválido.');
+      let power = prompt('Qual poder deseja conceder?');
+      if (!power) return alert('Poder inválido.');
+      const existing = _load('power_offers').filter(o => 
+        o.from===ME && o.to===dest && o.power===power
+      );
+      if (existing.length) {
+        return alert('Você já ofereceu esse poder a essa pessoa. Aguarde reset da Cobra.');
+      }
+      // registra a oferta
+      const offers = _load('power_offers');
+      offers.push({ from:ME, to:dest, power });
+      _save('power_offers', offers);
+      // envia offer
+      channel.postMessage({ type:'power_offer', data:{ from:ME, to:dest, power } });
+      alert('Oferta de poder enviada!');
+    }
+
+    function removerPoder() {
+      const powers = _load('powers');
+      if (!powers.length) return alert('Sem poderes recebidos.');
+      const list = powers.map((p,i)=>`${i+1}. ${p.power} (de ${p.from})`).join('\n');
+      let idx = parseInt(prompt(list+'\nDigite nº para remover:'),10) - 1;
+      if (powers[idx]) {
+        const removed = powers.splice(idx,1)[0];
+        _save('powers', powers);
+        alert(`❌ Poder "${removed.power}" removido.`);
+      } else {
+        alert('Índice inválido.');
+      }
+    }
+
+    function verPoderes() {
+      const powers = _load('powers');
+      if (!powers.length) return alert('Sem poderes recebidos.');
+      const list = powers.map((p,i)=>`${i+1}. ${p.power} (de ${p.from})`).join('\n');
+      alert('Meus poderes:\n'+list);
+    }
+  </script>
+</body>
+</html>
